@@ -6,8 +6,8 @@
 [![License](https://img.shields.io/crates/l/linkedbytes)](#license)
 [![Build Status][actions-badge]][actions-url]
 
-[actions-badge]: https://github.com/cloudwego/linkedbytes/actions/workflows/ci.yaml/badge.svg
-[actions-url]: https://github.com/cloudwego/linkedbytes/actions
+[actions-badge]: https://github.com/volo-rs/linkedbytes/actions/workflows/ci.yaml/badge.svg
+[actions-url]: https://github.com/volo-rs/linkedbytes/actions
 
 `LinkedBytes` is a linked list of `Bytes` and `BytesMut` (though we use VecDeque to implement it now).
 
