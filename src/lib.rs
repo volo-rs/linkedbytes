@@ -77,39 +77,39 @@ impl LinkedBytes {
         self.list.push_back(node);
     }
 
-    // This is a correct but not so performant implementation.
-    // pub fn as_ioslice(&self) -> Vec<IoSlice<'_>> {
-    //     let mut ioslice = Vec::with_capacity(self.list.len());
-    //     for node in self.list.iter() {
-    //         match node {
-    //             Node::Bytes(bytes) => ioslice.push(IoSlice::new(bytes.as_ref())),
-    //             Node::BytesMut(bytes) =>
-    // ioslice.push(IoSlice::new(bytes.as_ref())),         }
-    //     }
-    //     ioslice
-    // }
-
-    #[allow(clippy::needless_lifetimes)]
-    pub fn as_ioslice<'a>(&'a mut self) -> &'a [IoSlice<'a>] {
-        self.ioslice.reserve(self.list.len() + 1);
+    pub fn as_ioslice(&self) -> Vec<IoSlice<'_>> {
+        let mut ioslice = Vec::with_capacity(self.list.len());
         for node in self.list.iter() {
             match node {
-                // Safety: we will change this back to `'a` later.
-                Node::Bytes(bytes) => self
-                    .ioslice
-                    .push(IoSlice::new(unsafe { &*(bytes.as_ref() as *const _) })),
-                Node::BytesMut(bytes) => self
-                    .ioslice
-                    .push(IoSlice::new(unsafe { &*(bytes.as_ref() as *const _) })),
+                Node::Bytes(bytes) => ioslice.push(IoSlice::new(bytes.as_ref())),
+                Node::BytesMut(bytes) => ioslice.push(IoSlice::new(bytes.as_ref())),
             }
         }
-        // don't forget to push self.bytes
-        self.ioslice
-            .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
-        // Safety: we can guarantee that the returned `&[IoSlice<'_>]`'s lifetime can't
-        // outlive self.
-        unsafe { &*(self.ioslice.as_slice() as *const _) }
+        ioslice.push(IoSlice::new(self.bytes.as_ref()));
+        ioslice
     }
+
+    // #[allow(clippy::needless_lifetimes)]
+    // pub fn as_ioslice<'a>(&'a mut self) -> &'a [IoSlice<'a>] {
+    //     self.ioslice.reserve(self.list.len() + 1);
+    //     for node in self.list.iter() {
+    //         match node {
+    //             // Safety: we will change this back to `'a` later.
+    //             Node::Bytes(bytes) => self
+    //                 .ioslice
+    //                 .push(IoSlice::new(unsafe { &*(bytes.as_ref() as *const _) })),
+    //             Node::BytesMut(bytes) => self
+    //                 .ioslice
+    //                 .push(IoSlice::new(unsafe { &*(bytes.as_ref() as *const _) })),
+    //         }
+    //     }
+    //     // don't forget to push self.bytes
+    //     self.ioslice
+    //         .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
+    //     // Safety: we can guarantee that the returned `&[IoSlice<'_>]`'s lifetime can't
+    //     // outlive self.
+    //     unsafe { &*(self.ioslice.as_mut_slice() as *mut _) }
+    // }
 
     pub fn reset(&mut self) {
         // ioslice must be cleared before list

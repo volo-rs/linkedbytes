@@ -1,13 +1,13 @@
 [package]
 name = "linkedbytes"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Volo Team <volo@cloudwego.io>"]
 edition = "2021"
 description = "LinkedBytes is a linked list of Bytes and BytesMut."
 repository = "https://github.com/volo-rs/linkedbytes"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-categories = ["asynchronous", "network-programming", "web-programming"]
+categories = ["network-programming"]
 keywords = ["bytes", "rpc", "ioslice", "writev", "volo"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
