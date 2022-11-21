@@ -102,9 +102,10 @@ impl LinkedBytes {
             .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
 
         // do write_all_vectored
-        let (mut base_ptr, mut len) = (self.ioslice.as_mut_ptr(), self.ioslice.len());
+        // we use usize here to avoid `Send` bound required for *mut IoSlice
+        let (mut base_ptr, mut len) = (self.ioslice.as_mut_ptr() as usize, self.ioslice.len());
         while len != 0 {
-            let ioslice = unsafe { std::slice::from_raw_parts_mut(base_ptr, len) };
+            let ioslice = unsafe { std::slice::from_raw_parts(base_ptr as *mut IoSlice, len) };
             let n = writer.write_vectored(ioslice).await?;
             if n == 0 {
                 return Err(std::io::ErrorKind::WriteZero.into());
@@ -123,7 +124,7 @@ impl LinkedBytes {
             }
 
             // adjust the outer [IoSlice]
-            base_ptr = unsafe { base_ptr.add(remove) };
+            base_ptr = unsafe { (base_ptr as *mut IoSlice).add(remove) as usize };
             len -= remove;
             if len == 0 {
                 assert!(
@@ -132,7 +133,7 @@ impl LinkedBytes {
                 );
             } else {
                 // adjust the inner IoSlice
-                let inner_slice = unsafe { &mut *base_ptr };
+                let inner_slice = unsafe { &mut *(base_ptr as *mut IoSlice) };
                 let (inner_ptr, inner_len) = (inner_slice.as_ptr(), inner_slice.len());
                 let remaining = n - accumulated_len;
                 assert!(
