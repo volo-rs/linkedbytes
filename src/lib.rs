@@ -6,6 +6,7 @@
 use std::{collections::VecDeque, io::IoSlice};
 
 use bytes::{BufMut, Bytes, BytesMut};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 const DEFAULT_BUFFER_SIZE: usize = 8192; // 8KB
 const DEFAULT_DEQUE_SIZE: usize = 16;
@@ -77,40 +78,76 @@ impl LinkedBytes {
         self.list.push_back(node);
     }
 
-    pub fn as_ioslice(&self) -> Vec<IoSlice<'_>> {
-        let mut ioslice = Vec::with_capacity(self.list.len());
+    // TODO: use write_all_vectored when stable
+    pub async fn write_all_vectored<W: AsyncWrite + Unpin>(
+        &mut self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
+        assert!(
+            self.ioslice.is_empty(),
+            "ioslice must be empty, maybe forget to call `reset`"
+        );
+        self.ioslice.reserve(self.list.len() + 1);
+        // prepare ioslice
         for node in self.list.iter() {
-            match node {
-                Node::Bytes(bytes) => ioslice.push(IoSlice::new(bytes.as_ref())),
-                Node::BytesMut(bytes) => ioslice.push(IoSlice::new(bytes.as_ref())),
+            let bytes = node.as_ref();
+            if bytes.is_empty() {
+                continue;
+            }
+            // SAFETY: we can guarantee that the lifetime of `bytes` can't outlive self
+            self.ioslice
+                .push(IoSlice::new(unsafe { &*(bytes as *const _) }));
+        }
+        self.ioslice
+            .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
+
+        // do write_all_vectored
+        let (mut base_ptr, mut len) = (self.ioslice.as_mut_ptr(), self.ioslice.len());
+        while len != 0 {
+            let ioslice = unsafe { std::slice::from_raw_parts_mut(base_ptr, len) };
+            let n = writer.write_vectored(ioslice).await?;
+            if n == 0 {
+                return Err(std::io::ErrorKind::WriteZero.into());
+            }
+            // Number of buffers to remove.
+            let mut remove = 0;
+            // Total length of all the to be removed buffers.
+            let mut accumulated_len = 0;
+            for buf in ioslice.iter() {
+                if accumulated_len + buf.len() > n {
+                    break;
+                } else {
+                    accumulated_len += buf.len();
+                    remove += 1;
+                }
+            }
+
+            // adjust the outer [IoSlice]
+            base_ptr = unsafe { base_ptr.add(remove) };
+            len -= remove;
+            if len == 0 {
+                assert!(
+                    n == accumulated_len,
+                    "advancing io slices beyond their length"
+                );
+            } else {
+                // adjust the inner IoSlice
+                let inner_slice = unsafe { &mut *base_ptr };
+                let (inner_ptr, inner_len) = (inner_slice.as_ptr(), inner_slice.len());
+                let remaining = n - accumulated_len;
+                assert!(
+                    remaining <= inner_len,
+                    "advancing io slice beyond its length"
+                );
+                let new_ptr = unsafe { inner_ptr.add(remaining) };
+                let new_len = inner_len - remaining;
+                *inner_slice =
+                    IoSlice::new(unsafe { std::slice::from_raw_parts(new_ptr, new_len) });
             }
         }
-        ioslice.push(IoSlice::new(self.bytes.as_ref()));
-        ioslice
+        self.ioslice.clear();
+        Ok(())
     }
-
-    // #[allow(clippy::needless_lifetimes)]
-    // pub fn as_ioslice<'a>(&'a mut self) -> &'a [IoSlice<'a>] {
-    //     self.ioslice.reserve(self.list.len() + 1);
-    //     for node in self.list.iter() {
-    //         match node {
-    //             // Safety: we will change this back to `'a` later.
-    //             Node::Bytes(bytes) => self
-    //                 .ioslice
-    //                 .push(IoSlice::new(unsafe { &*(bytes.as_ref() as *const _) })),
-    //             Node::BytesMut(bytes) => self
-    //                 .ioslice
-    //                 .push(IoSlice::new(unsafe { &*(bytes.as_ref() as *const _) })),
-    //         }
-    //     }
-    //     // don't forget to push self.bytes
-    //     self.ioslice
-    //         .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
-    //     // Safety: we can guarantee that the returned `&[IoSlice<'_>]`'s lifetime can't
-    //     // outlive self.
-    //     unsafe { &*(self.ioslice.as_mut_slice() as *mut _) }
-    // }
-
     pub fn reset(&mut self) {
         // ioslice must be cleared before list
         self.ioslice.clear();
