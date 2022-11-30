@@ -6,6 +6,8 @@
 use std::{collections::VecDeque, io::IoSlice};
 
 use bytes::{BufMut, Bytes, BytesMut};
+#[cfg(feature = "smolstr")]
+use smol_str::SmolStr;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 const DEFAULT_BUFFER_SIZE: usize = 8192; // 8KB
@@ -26,6 +28,8 @@ pub struct LinkedBytes {
 pub enum Node {
     Bytes(Bytes),
     BytesMut(BytesMut),
+    #[cfg(feature = "smolstr")]
+    SmolStr(SmolStr),
 }
 
 impl AsRef<[u8]> for Node {
@@ -34,6 +38,8 @@ impl AsRef<[u8]> for Node {
         match self {
             Node::Bytes(b) => b.as_ref(),
             Node::BytesMut(b) => b.as_ref(),
+            #[cfg(feature = "smolstr")]
+            Node::SmolStr(s) => s.as_ref(),
         }
     }
 }
@@ -44,6 +50,7 @@ impl LinkedBytes {
         Self::with_capacity(DEFAULT_BUFFER_SIZE)
     }
 
+    #[inline]
     pub fn with_capacity(cap: usize) -> Self {
         let bytes = BytesMut::with_capacity(cap);
         let list = VecDeque::with_capacity(DEFAULT_DEQUE_SIZE);
@@ -71,6 +78,16 @@ impl LinkedBytes {
 
     pub fn insert(&mut self, bytes: Bytes) {
         let node = Node::Bytes(bytes);
+        // split current bytes
+        let prev = self.bytes.split();
+
+        self.list.push_back(Node::BytesMut(prev));
+        self.list.push_back(node);
+    }
+
+    #[cfg(feature = "smolstr")]
+    pub fn insert_smolstr(&mut self, smol_str: SmolStr) {
+        let node = Node::SmolStr(smol_str);
         // split current bytes
         let prev = self.bytes.split();
 
