@@ -1,6 +1,6 @@
 [package]
 name = "linkedbytes"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Volo Team <volo@cloudwego.io>"]
 edition = "2021"
 description = "LinkedBytes is a linked list of Bytes and BytesMut."
@@ -18,7 +18,4 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 bytes = "1"
 tokio = { version = "1", features = ["io-util"] }
-smol_str = { version = "0.1", optional = true }
-
-[features]
-smolstr = ["smol_str"]
+faststr = { version = "0.1", optional = true }
