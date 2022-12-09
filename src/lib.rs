@@ -166,6 +166,78 @@ impl LinkedBytes {
         self.ioslice.clear();
         Ok(())
     }
+
+    // TODO: use write_all_vectored when stable
+    pub fn sync_write_all_vectored<W: std::io::Write>(
+        &mut self,
+        writer: &mut W,
+    ) -> std::io::Result<()> {
+        assert!(
+            self.ioslice.is_empty(),
+            "ioslice must be empty, maybe forget to call `reset`"
+        );
+        self.ioslice.reserve(self.list.len() + 1);
+        // prepare ioslice
+        for node in self.list.iter() {
+            let bytes = node.as_ref();
+            if bytes.is_empty() {
+                continue;
+            }
+            // SAFETY: we can guarantee that the lifetime of `bytes` can't outlive self
+            self.ioslice
+                .push(IoSlice::new(unsafe { &*(bytes as *const _) }));
+        }
+        self.ioslice
+            .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
+
+        // do write_all_vectored
+        let (mut base_ptr, mut len) = (self.ioslice.as_mut_ptr(), self.ioslice.len());
+        while len != 0 {
+            let ioslice = unsafe { std::slice::from_raw_parts(base_ptr, len) };
+            let n = writer.write_vectored(ioslice)?;
+            if n == 0 {
+                return Err(std::io::ErrorKind::WriteZero.into());
+            }
+            // Number of buffers to remove.
+            let mut remove = 0;
+            // Total length of all the to be removed buffers.
+            let mut accumulated_len = 0;
+            for buf in ioslice.iter() {
+                if accumulated_len + buf.len() > n {
+                    break;
+                } else {
+                    accumulated_len += buf.len();
+                    remove += 1;
+                }
+            }
+
+            // adjust the outer [IoSlice]
+            base_ptr = unsafe { (base_ptr as *mut IoSlice).add(remove) };
+            len -= remove;
+            if len == 0 {
+                assert!(
+                    n == accumulated_len,
+                    "advancing io slices beyond their length"
+                );
+            } else {
+                // adjust the inner IoSlice
+                let inner_slice = unsafe { &mut *(base_ptr as *mut IoSlice) };
+                let (inner_ptr, inner_len) = (inner_slice.as_ptr(), inner_slice.len());
+                let remaining = n - accumulated_len;
+                assert!(
+                    remaining <= inner_len,
+                    "advancing io slice beyond its length"
+                );
+                let new_ptr = unsafe { inner_ptr.add(remaining) };
+                let new_len = inner_len - remaining;
+                *inner_slice =
+                    IoSlice::new(unsafe { std::slice::from_raw_parts(new_ptr, new_len) });
+            }
+        }
+        self.ioslice.clear();
+        Ok(())
+    }
+
     pub fn reset(&mut self) {
         // ioslice must be cleared before list
         self.ioslice.clear();
