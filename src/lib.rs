@@ -6,7 +6,6 @@
 use std::{collections::VecDeque, io::IoSlice};
 
 use bytes::{BufMut, Bytes, BytesMut};
-#[cfg(feature = "faststr")]
 use faststr::FastStr;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
@@ -28,7 +27,6 @@ pub struct LinkedBytes {
 pub enum Node {
     Bytes(Bytes),
     BytesMut(BytesMut),
-    #[cfg(feature = "faststr")]
     FastStr(FastStr),
 }
 
@@ -38,7 +36,6 @@ impl AsRef<[u8]> for Node {
         match self {
             Node::Bytes(b) => b.as_ref(),
             Node::BytesMut(b) => b.as_ref(),
-            #[cfg(feature = "faststr")]
             Node::FastStr(s) => s.as_ref(),
         }
     }
@@ -85,7 +82,6 @@ impl LinkedBytes {
         self.list.push_back(node);
     }
 
-    #[cfg(feature = "faststr")]
     pub fn insert_faststr(&mut self, fast_str: FastStr) {
         let node = Node::FastStr(fast_str);
         // split current bytes
