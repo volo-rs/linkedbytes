@@ -268,6 +268,38 @@ impl LinkedBytes {
     }
 }
 
+// Unstable APIs
+impl LinkedBytes {
+    /// This splits the current bytes_mut and push it to the list.
+    /// This is an unstable API that may change in the future, don't rely on this.
+    /// Returns the index of the node.
+    #[doc(hidden)]
+    #[inline]
+    pub fn split(&mut self) -> usize {
+        let prev = self.bytes.split();
+        let node = Node::BytesMut(prev);
+        self.list.push_back(node);
+        self.list.len() - 1
+    }
+
+    /// This gets the node at the given index.
+    /// If you want to get the current bytes_mut, use `bytes_mut()` instead.
+    /// This is an unstable API that may change in the future, don't rely on this.
+    #[doc(hidden)]
+    #[inline]
+    pub fn get_list_mut(&mut self, index: usize) -> Option<&mut Node> {
+        self.list.get_mut(index)
+    }
+
+    /// This gets the iterator of the list.
+    /// This is an unstable API that may change in the future, don't rely on this.
+    #[doc(hidden)]
+    #[inline]
+    pub fn iter_list(&self) -> impl Iterator<Item = &Node> {
+        self.list.iter()
+    }
+}
+
 impl Default for LinkedBytes {
     #[inline]
     fn default() -> Self {
