@@ -303,7 +303,9 @@ impl LinkedBytes {
     /// This is an unstable API that may change in the future, don't rely on this.
     #[doc(hidden)]
     #[inline]
-    pub fn into_iter_list(self) -> impl Iterator<Item = Node> {
+    pub fn into_iter_list(mut self) -> impl Iterator<Item = Node> {
+        let node = Node::BytesMut(self.bytes);
+        self.list.push_back(node);
         self.list.into_iter()
     }
 }
