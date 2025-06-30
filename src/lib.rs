@@ -135,8 +135,10 @@ impl LinkedBytes {
             self.ioslice
                 .push(IoSlice::new(unsafe { &*(bytes as *const _) }));
         }
-        self.ioslice
-            .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
+        if !self.bytes.is_empty() {
+            self.ioslice
+                .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
+        }
 
         // do write_all_vectored
         // we use usize here to avoid `Send` bound required for *mut IoSlice
@@ -204,8 +206,10 @@ impl LinkedBytes {
             self.ioslice
                 .push(IoSlice::new(unsafe { &*(bytes as *const _) }));
         }
-        self.ioslice
-            .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
+        if !self.bytes.is_empty() {
+            self.ioslice
+                .push(IoSlice::new(unsafe { &*(self.bytes.as_ref() as *const _) }));
+        }
 
         // do write_all_vectored
         let (mut base_ptr, mut len) = (self.ioslice.as_mut_ptr(), self.ioslice.len());
