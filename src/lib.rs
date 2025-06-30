@@ -103,6 +103,21 @@ impl LinkedBytes {
         self.list.push_back(node);
     }
 
+    pub fn io_slice(&mut self) -> Vec<IoSlice<'_>> {
+        let mut ioslice = Vec::with_capacity(self.list.len() + 1);
+        for node in self.list.iter() {
+            let bytes = node.as_ref();
+            if bytes.is_empty() {
+                continue;
+            }
+            ioslice.push(IoSlice::new(bytes));
+        }
+        if !self.bytes.is_empty() {
+            ioslice.push(IoSlice::new(self.bytes.as_ref()));
+        }
+        ioslice
+    }
+
     // TODO: use write_all_vectored when stable
     pub async fn write_all_vectored<W: AsyncWrite + Unpin>(
         &mut self,
