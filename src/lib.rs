@@ -123,10 +123,7 @@ impl LinkedBytes {
         &mut self,
         writer: &mut W,
     ) -> std::io::Result<()> {
-        assert!(
-            self.ioslice.is_empty(),
-            "ioslice must be empty, maybe forget to call `reset`"
-        );
+        self.ioslice.clear();
         self.ioslice.reserve(self.list.len() + 1);
         // prepare ioslice
         for node in self.list.iter() {
@@ -195,10 +192,7 @@ impl LinkedBytes {
         &mut self,
         writer: &mut W,
     ) -> std::io::Result<()> {
-        assert!(
-            self.ioslice.is_empty(),
-            "ioslice must be empty, maybe forget to call `reset`"
-        );
+        self.ioslice.clear();
         self.ioslice.reserve(self.list.len() + 1);
         // prepare ioslice
         for node in self.list.iter() {
