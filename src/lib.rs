@@ -112,7 +112,9 @@ impl LinkedBytes {
             }
             ioslice.push(IoSlice::new(bytes));
         }
-        ioslice.push(IoSlice::new(self.bytes.as_ref()));
+        if !self.bytes.is_empty() {
+            ioslice.push(IoSlice::new(self.bytes.as_ref()));
+        }
         ioslice
     }
 
