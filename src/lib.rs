@@ -73,6 +73,18 @@ impl LinkedBytes {
         self.bytes.reserve(additional);
     }
 
+    pub fn len(&self) -> usize {
+        let mut len = 0;
+        for node in self.list.iter() {
+            len += node.as_ref().len();
+        }
+        len + self.bytes.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn insert(&mut self, bytes: Bytes) {
         let node = Node::Bytes(bytes);
         // split current bytes
