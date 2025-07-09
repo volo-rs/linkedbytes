@@ -103,7 +103,7 @@ impl LinkedBytes {
         self.list.push_back(node);
     }
 
-    pub fn io_slice(&mut self) -> Vec<IoSlice<'_>> {
+    pub fn io_slice(&self) -> Vec<IoSlice<'_>> {
         let mut ioslice = Vec::with_capacity(self.list.len() + 1);
         for node in self.list.iter() {
             let bytes = node.as_ref();
