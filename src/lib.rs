@@ -59,12 +59,12 @@ impl LinkedBytes {
     }
 
     #[inline]
-    pub fn bytes(&self) -> &BytesMut {
+    pub const fn bytes(&self) -> &BytesMut {
         &self.bytes
     }
 
     #[inline]
-    pub fn bytes_mut(&mut self) -> &mut BytesMut {
+    pub const fn bytes_mut(&mut self) -> &mut BytesMut {
         &mut self.bytes
     }
 
@@ -103,7 +103,7 @@ impl LinkedBytes {
         self.list.push_back(node);
     }
 
-    pub fn io_slice(&mut self) -> Vec<IoSlice<'_>> {
+    pub fn io_slice(&self) -> Vec<IoSlice<'_>> {
         let mut ioslice = Vec::with_capacity(self.list.len() + 1);
         for node in self.list.iter() {
             let bytes = node.as_ref();
@@ -233,7 +233,7 @@ impl LinkedBytes {
             }
 
             // adjust the outer [IoSlice]
-            base_ptr = unsafe { (base_ptr as *mut IoSlice).add(remove) };
+            base_ptr = unsafe { base_ptr.add(remove) };
             len -= remove;
             if len == 0 {
                 assert!(
@@ -242,7 +242,7 @@ impl LinkedBytes {
                 );
             } else {
                 // adjust the inner IoSlice
-                let inner_slice = unsafe { &mut *(base_ptr as *mut IoSlice) };
+                let inner_slice = unsafe { &mut *base_ptr };
                 let (inner_ptr, inner_len) = (inner_slice.as_ptr(), inner_slice.len());
                 let remaining = n - accumulated_len;
                 assert!(
