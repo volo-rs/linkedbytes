@@ -59,12 +59,12 @@ impl LinkedBytes {
     }
 
     #[inline]
-    pub fn bytes(&self) -> &BytesMut {
+    pub const fn bytes(&self) -> &BytesMut {
         &self.bytes
     }
 
     #[inline]
-    pub fn bytes_mut(&mut self) -> &mut BytesMut {
+    pub const fn bytes_mut(&mut self) -> &mut BytesMut {
         &mut self.bytes
     }
 
