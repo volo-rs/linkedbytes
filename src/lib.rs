@@ -233,7 +233,7 @@ impl LinkedBytes {
             }
 
             // adjust the outer [IoSlice]
-            base_ptr = unsafe { (base_ptr as *mut IoSlice).add(remove) };
+            base_ptr = unsafe { base_ptr.add(remove) };
             len -= remove;
             if len == 0 {
                 assert!(
@@ -242,7 +242,7 @@ impl LinkedBytes {
                 );
             } else {
                 // adjust the inner IoSlice
-                let inner_slice = unsafe { &mut *(base_ptr as *mut IoSlice) };
+                let inner_slice = unsafe { &mut *base_ptr };
                 let (inner_ptr, inner_len) = (inner_slice.as_ptr(), inner_slice.len());
                 let remaining = n - accumulated_len;
                 assert!(
