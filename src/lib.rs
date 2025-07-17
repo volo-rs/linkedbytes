@@ -69,6 +69,20 @@ impl LinkedBytes {
     }
 
     #[inline]
+    pub fn concat(&self) -> Bytes {
+        let list_len: usize = self.iter_list().map(|node| node.as_ref().len()).sum();
+        let total_len = list_len + self.bytes.len();
+        let mut dest = BytesMut::with_capacity(total_len);
+        for node in &self.list {
+            dest.put_slice(node.as_ref());
+        }
+        if !self.bytes.is_empty() {
+            dest.put_slice(&self.bytes);
+        }
+        dest.freeze()
+    }
+
+    #[inline]
     pub fn reserve(&mut self, additional: usize) {
         self.bytes.reserve(additional);
     }
@@ -87,20 +101,28 @@ impl LinkedBytes {
 
     pub fn insert(&mut self, bytes: Bytes) {
         let node = Node::Bytes(bytes);
-        // split current bytes
-        let prev = self.bytes.split();
+        if self.bytes.is_empty() {
+            self.list.push_back(node);
+        } else {
+            // split current bytes
+            let prev = self.bytes.split();
 
-        self.list.push_back(Node::BytesMut(prev));
-        self.list.push_back(node);
+            self.list.push_back(Node::BytesMut(prev));
+            self.list.push_back(node);
+        }
     }
 
     pub fn insert_faststr(&mut self, fast_str: FastStr) {
         let node = Node::FastStr(fast_str);
-        // split current bytes
-        let prev = self.bytes.split();
+        if self.bytes.is_empty() {
+            self.list.push_back(node);
+        } else {
+            // split current bytes
+            let prev = self.bytes.split();
 
-        self.list.push_back(Node::BytesMut(prev));
-        self.list.push_back(node);
+            self.list.push_back(Node::BytesMut(prev));
+            self.list.push_back(node);
+        }
     }
 
     pub fn io_slice(&self) -> Vec<IoSlice<'_>> {
