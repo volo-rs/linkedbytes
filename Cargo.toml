@@ -1,6 +1,6 @@
 [package]
 name = "linkedbytes"
-version = "0.1.13"
+version = "0.1.14"
 authors = ["Volo Team <volo@cloudwego.io>"]
 edition = "2021"
 description = "LinkedBytes is a linked list of Bytes and BytesMut."
