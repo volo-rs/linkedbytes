@@ -68,8 +68,9 @@ impl LinkedBytes {
         &mut self.bytes
     }
 
+    /// This concatenates the list and the bytes into a [`BytesMut`].
     #[inline]
-    pub fn concat(&self) -> Bytes {
+    pub fn concat(&self) -> BytesMut {
         let list_len: usize = self.iter_list().map(|node| node.as_ref().len()).sum();
         let total_len = list_len + self.bytes.len();
         let mut dest = BytesMut::with_capacity(total_len);
@@ -79,7 +80,7 @@ impl LinkedBytes {
         if !self.bytes.is_empty() {
             dest.put_slice(&self.bytes);
         }
-        dest.freeze()
+        dest
     }
 
     #[inline]
