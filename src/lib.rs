@@ -88,7 +88,7 @@ impl LinkedBytes {
     /// This is useful when you want to convert the linked bytes into a [`BytesMut`]
     /// without allocating a new [`BytesMut`].
     #[inline]
-    pub fn try_into_bytesmut(self) -> Result<BytesMut, Self> {
+    pub fn try_into_bytes_mut(self) -> Result<BytesMut, Self> {
         if self.list.is_empty() {
             Ok(self.bytes)
         } else {
@@ -100,8 +100,8 @@ impl LinkedBytes {
     /// If the linked bytes is not empty, it will return a new [`BytesMut`]
     /// that contains the concatenated bytes.
     #[inline]
-    pub fn into_bytesmut(self) -> BytesMut {
-        match self.try_into_bytesmut() {
+    pub fn into_bytes_mut(self) -> BytesMut {
+        match self.try_into_bytes_mut() {
             Ok(bytes) => bytes,
             Err(self_) => self_.concat(),
         }
