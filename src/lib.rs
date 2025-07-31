@@ -83,6 +83,30 @@ impl LinkedBytes {
         dest
     }
 
+    /// This tries to convert the linked bytes into a [`BytesMut`].
+    /// If the linked bytes is not empty, it will return an error.
+    /// This is useful when you want to convert the linked bytes into a [`BytesMut`]
+    /// without allocating a new [`BytesMut`].
+    #[inline]
+    pub fn try_into_bytesmut(self) -> Result<BytesMut, Self> {
+        if self.list.is_empty() {
+            Ok(self.bytes)
+        } else {
+            Err(self)
+        }
+    }
+
+    /// This converts the linked bytes into a [`BytesMut`].
+    /// If the linked bytes is not empty, it will return a new [`BytesMut`]
+    /// that contains the concatenated bytes.
+    #[inline]
+    pub fn into_bytesmut(self) -> BytesMut {
+        match self.try_into_bytesmut() {
+            Ok(bytes) => bytes,
+            Err(self_) => self_.concat(),
+        }
+    }
+
     #[inline]
     pub fn reserve(&mut self, additional: usize) {
         self.bytes.reserve(additional);
